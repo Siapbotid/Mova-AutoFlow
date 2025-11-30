@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoFlow - Video Generation Automation</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <button id="license-button" class="sidebar-license-btn" type="button">
+                    <span class="sidebar-license-icon">&#128273;</span>
+                    <span class="sidebar-license-text">License</span>
+                </button>
+                <button id="sidebar-toggle" class="sidebar-toggle" type="button" aria-label="Toggle sidebar">
+                    <span class="sidebar-toggle-icon">&#171;</span>
+                </button>
+            </div>
+            
+            <ul class="nav-menu">
+                <li class="nav-item active" data-page="overview">
+                    <span class="nav-icon icon-overview"></span>
+                    <span class="nav-text">Overview</span>
+                </li>
+                <li class="nav-item" data-page="settings">
+                    <span class="nav-icon icon-settings"></span>
+                    <span class="nav-text">Settings</span>
+                </li>
+                <li class="nav-item" data-page="logs">
+                    <span class="nav-icon icon-logs"></span>
+                    <span class="nav-text">Logs</span>
+                </li>
+                <li class="nav-item" data-page="about">
+                    <span class="nav-icon icon-about"></span>
+                    <span class="nav-text">About</span>
+                </li>
+                <li class="nav-item nav-item-logout" id="logout-nav">
+                    <span class="nav-icon icon-logout"></span>
+                    <span class="nav-text">Logout</span>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Overview Page -->
+            <div class="page active" id="overview-page">
+                <div class="page-header">
+                    <h2>Video Generation Overview</h2>
+                    <div class="status-indicator">
+                        <span class="status-dot" id="status-dot"></span>
+                        <span class="status-text" id="status-text">Ready</span>
+                    </div>
+                </div>
+
+                <div class="content-grid">
+                    <!-- Configuration & Control -->
+                    <div class="card overview-config-card">
+                        <div class="overview-config-columns">
+                            <div class="config-card">
+                                <div class="config-card-header">
+                                    <h3>Configuration</h3>
+                                    <button id="config-collapse-toggle" class="collapse-toggle-btn" type="button" aria-expanded="true">
+                                        <span class="collapse-toggle-label">Collapse</span>
+                                        <span class="collapse-toggle-icon">&#9658;</span>
+                                    </button>
+                                </div>
+
+                                <div id="config-card-body">
+                                    <div class="step-label">Step 1  Choose generation mode</div>
+                                    <div class="config-group">
+                                        <div class="generation-type-tabs">
+                                            <button class="tab-btn active" data-type="text-to-video">Text-to-Video</button>
+                                            <button class="tab-btn" data-type="image-to-video">Image-to-Video</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="step-label">Step 2  Video output settings</div>
+                                    <div class="config-row">
+                                        <div class="config-group">
+                                            <label>Video Model</label>
+                                            <select id="model-select">
+                                                <option value="veo-3-fast" selected>Veo 3.1 Fast (Default)</option>
+                                                <option value="veo-3-fast-low">Veo 3.1 Fast (Lower Priority)</option>
+                                                <option value="veo-3">Veo 3.1 (Quality)</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="config-group">
+                                            <label>Aspect Ratio</label>
+                                            <select id="aspect-ratio">
+                                                <option value="LANDSCAPE 16:9" selected>Landscape (16:9)</option>
+                                                <option value="PORTRAIT 9:16">Portrait (9:16)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="config-row">
+                                        <div class="config-group">
+                                            <label>Concurrent Processing</label>
+                                            <div class="concurrent-container">
+                                                <input type="number" id="concurrent-count" min="1" max="20" value="2">
+                                                <span class="concurrent-label">Max: 20 concurrent processes</span>
+                                                <button id="save-config" class="btn btn-secondary btn-sm concurrent-save-btn">Save Configuration</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="config-actions">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="input-panel">
+                                <div class="control-content">
+                                    <div class="step-label">Step 3  Enter prompts &amp; start generation</div>
+                                    <div class="config-card-header">
+                                        <h3>Control</h3>
+                                        <button id="control-collapse-toggle" class="collapse-toggle-btn" type="button" aria-expanded="true">
+                                            <span class="collapse-toggle-label">Collapse</span>
+                                            <span class="collapse-toggle-icon">&#9658;</span>
+                                        </button>
+                                    </div>
+
+                                    <div id="control-card-body">
+                                        <div id="text-to-video-controls" class="mode-controls">
+                                            <div class="control-group">
+                                                <label>Prompts (one per line)</label>
+                                                <textarea id="prompt-list" placeholder="Enter your video prompts, one per line...&#10;Example:&#10;A beautiful sunset over mountains&#10;A futuristic city at night&#10;A cat wearing a space helmet" rows="8"></textarea>
+                                                <div class="prompt-stats">
+                                                    <span id="prompt-count">0 prompts</span>
+                                                    <div class="prompt-actions" style="text-align: right;">
+                                                        <button id="save-prompts" class="btn btn-secondary btn-sm">Save</button>
+                                                        <button id="clear-prompts" class="btn btn-secondary btn-sm">Clear All</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div id="image-to-video-controls" class="mode-controls" style="display: none;">
+                                            <div class="control-group">
+                                                <label>Image-to-Video Settings</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Processing Controls -->
+                                <div class="processing-controls">
+                                    <button id="start-btn" class="btn btn-secondary">
+                                        <span class="btn-icon">▶</span>
+                                        Start
+                                    </button>
+                                    <button id="pause-btn" class="btn btn-secondary" disabled>
+                                        <span class="btn-icon">⏸</span>
+                                        Pause
+                                    </button>
+                                    <button id="resume-btn" class="btn btn-secondary" disabled style="display: none;">
+                                        <span class="btn-icon">▶</span>
+                                        Resume
+                                    </button>
+                                    <button id="stop-btn" class="btn btn-secondary" disabled>
+                                        <span class="btn-icon">⏹</span>
+                                        Stop
+                                    </button>
+                                </div>
+                                <p class="start-help-text">Step 0: Configure your API token, Gemini API key, and input/output folders on the Settings page before using Start.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Processing Status & Results -->
+                    <div class="card processed-feed">
+                        <div class="processed-header">
+                            <h3>Processing Status</h3>
+                            <div id="batch-info" class="batch-info"></div>
+                            <div class="feed-controls">
+                                <button id="clear-completed" class="btn btn-secondary btn-sm">Skip All</button>
+                                <button id="export-results" class="btn btn-secondary btn-sm">Export Results</button>
+                            </div>
+                        </div>
+
+                        <div class="progress-section">
+                            <div class="progress-bar-container">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="progress-bar"></div>
+                                </div>
+                                <span class="progress-text" id="progress-text">0%</span>
+                            </div>
+
+                            <div class="progress-stats">
+                                <div class="stat">
+                                    <span class="stat-label">Queued</span>
+                                    <span class="stat-value" id="queued-count">0</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-label">Processing</span>
+                                    <span class="stat-value" id="processing-count">0</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-label">Completed</span>
+                                    <span class="stat-value" id="completed-count">0</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-label">Failed</span>
+                                    <span class="stat-value" id="failed-count">0</span>
+                                </div>
+                            </div>
+
+                            <div id="processing-status-message" class="processing-status-message"></div>
+
+                            <div class="inline-log-header">
+                                <span class="inline-log-title">Recent Activity</span>
+                                <button id="inline-copy-logs" class="btn btn-secondary btn-sm">Copy</button>
+                            </div>
+
+                            <div id="inline-log-container" class="inline-log-container">
+                                <div class="inline-log-empty">No recent activity</div>
+                            </div>
+                        </div>
+
+                        <div class="feed-container" id="processed-items">
+                            <div class="feed-empty">No items processed yet</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Page -->
+            <div class="page" id="settings-page">
+                <div class="page-header">
+                    <h2>Settings</h2>
+                </div>
+                
+                <div class="settings-content">
+                    <div class="card">
+                        <h3>API Configuration</h3>
+                        
+                        <div class="setting-group">
+                            <div class="label-with-button">
+                                <label>Bearer Token</label>
+                                <button id="test-token" class="btn btn-secondary btn-sm">Test Token</button>
+                            </div>
+                            <textarea id="bearer-token" placeholder="Paste your Bearer token here..." rows="3"></textarea>
+                            <small class="setting-help">This token will be used for all video generations</small>
+                        </div>
+
+                        <div class="setting-group">
+                            <label>Gemini API Key</label>
+                            <input type="text" id="settings-gemini-key" placeholder="Your Gemini API key..." />
+                            <small class="setting-help">Used for Gemini-based analysis features</small>
+                        </div>
+
+                        <div class="setting-group">
+                            <label>Default Video Model</label>
+                            <select id="settings-model">
+                                <option value="veo-3-fast">Veo 3.1 Fast</option>
+                                <option value="veo-3-fast-low">Veo 3.1 Fast (Lower Priority)</option>
+                                <option value="veo-3">Veo 3.1 (Quality)</option>
+                            </select>
+                        </div>
+
+                        <div class="setting-group">
+                            <label>Default Concurrent Processing</label>
+                            <input type="number" id="settings-concurrent" min="1" max="20" value="2">
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>Input &amp; Output Settings</h3>
+                        
+                        <div class="setting-group">
+                            <label>Input Folder</label>
+                            <div class="folder-selector">
+                                <input type="text" id="input-folder-path" placeholder="Select input folder..." readonly>
+                                <button id="browse-input" class="btn btn-secondary">Browse</button>
+                            </div>
+                            <div class="folder-info" id="folder-info" style="display: none;">
+                                <span class="info-text" id="image-count">0 images found</span>
+                            </div>
+                        </div>
+
+                        <div class="setting-group">
+                            <label>Image-to-Video Settings</label>
+                            <p class="setting-help">Configure the Input Folder above and the Gemini API key to control image-to-video generation.</p>
+                        </div>
+
+                        <div class="setting-group">
+                            <label>Output Folder</label>
+                            <div class="folder-selector">
+                                <input type="text" id="output-folder-path" placeholder="Select output folder..." readonly>
+                                <button id="browse-output" class="btn btn-secondary">Browse</button>
+                            </div>
+                            <p class="setting-help">This folder will be used to save all generated videos.</p>
+                        </div>
+
+                        <div class="setting-group">
+                            <label>Auto-save Settings</label>
+                            <div class="checkbox-container">
+                                <input type="checkbox" id="auto-save-settings" checked>
+                                <label for="auto-save-settings">Automatically save settings when changed</label>
+                            </div>
+                        </div>
+
+                        <div class="setting-group">
+                            <label>Enable Logging</label>
+                            <div class="checkbox-container">
+                                <input type="checkbox" id="enable-logging" checked>
+                                <label for="enable-logging">Save processing logs to output folder</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-actions">
+                        <button id="save-settings" class="btn btn-secondary">Save Settings</button>
+                        <button id="reset-settings" class="btn btn-secondary">Reset to Defaults</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logs Page -->
+            <div class="page" id="logs-page">
+                <div class="page-header">
+                    <h2>Processing Logs</h2>
+                    <div class="log-controls">
+                        <button id="copy-logs" class="btn btn-secondary">Copy Logs</button>
+                        <button id="clear-logs" class="btn btn-secondary">Clear Logs</button>
+                        <button id="export-logs" class="btn btn-secondary">Export Logs</button>
+                    </div>
+                </div>
+                
+                <div class="logs-content">
+                    <div class="card logs-card">
+                        <div class="log-viewer" id="log-viewer">
+                            <div class="log-empty">No logs available</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- About Page -->
+            <div class="page" id="about-page">
+                <div class="page-header">
+                    <h2>About AutoFlow</h2>
+                </div>
+                
+                <div class="about-content">
+                    <div class="card">
+                        <div class="about-header">
+                            <img src="../../assets/icon.png" alt="AutoFlow Logo" class="about-logo">
+                            <div class="about-info">
+                                <h3>AutoFlow</h3>
+                                <p>Video Generator Automation For Flow</p>
+                                <p class="version">Version <span id="app-version">1.0.0</span></p>
+                            </div>
+                        </div>
+                        
+                        <div class="about-description">
+                            <p>AutoFlow is a powerful automation tool for generating videos using Google's Veo 3 and Veo 3 Fast models. It supports both text-to-video and image-to-video generation with batch processing capabilities.</p>
+                            
+                            <h4>Features:</h4>
+                            <ul>
+                                <li>Text-to-Video and Image-to-Video generation</li>
+                                <li>Batch processing with concurrent execution</li>
+                                <li>Bearer token authentication</li>
+                                <li>Real-time progress monitoring</li>
+                                <li>Comprehensive logging system</li>
+                                <li>Settings persistence</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="license-modal" class="modal">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3>License Information</h3>
+                <button id="license-modal-close" class="modal-close-btn" type="button">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="license-modal-status" class="modal-status-text"></p>
+                <div id="license-modal-content" class="license-detail-grid"></div>
+            </div>
+            <div class="modal-footer">
+                <button id="license-modal-close-footer" class="btn btn-secondary btn-sm" type="button">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="api.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

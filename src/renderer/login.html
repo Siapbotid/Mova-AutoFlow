@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoFlow - License Login</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body.login-page {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    .login-card {
+      width: 420px;
+      max-width: 90vw;
+      padding: 32px 32px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .login-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      text-align: center;
+    }
+
+    .login-app-logo {
+      flex-shrink: 0;
+    }
+
+    .login-heading {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .login-main-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .login-main-subtitle {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin: 0;
+    }
+
+    .login-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 8px;
+    }
+
+    .login-form {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .login-input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background-color: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 0 14px;
+      height: 44px;
+    }
+
+    .login-input-icon {
+      font-size: 16px;
+      color: var(--text-muted);
+    }
+
+    .login-input-wrapper input {
+      flex: 1;
+      border: none;
+      outline: none;
+      background: transparent;
+      padding: 0;
+      height: 100%;
+      color: var(--text-primary);
+    }
+
+    .login-terms-text {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    .login-actions .btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .login-footer {
+      margin-top: 4px;
+      padding-top: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: center;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .login-footer strong {
+      color: var(--text-secondary);
+    }
+
+    .login-error {
+      font-size: 12px;
+      color: var(--error-color);
+    }
+  </style>
+</head>
+<body class="login-page">
+  <div class="card login-card">
+    <div class="login-header">
+      <div class="app-logo login-app-logo">
+        <div class="logo-icon">
+          <img src="../../assets/icon.png" alt="AutoFlow Logo">
+        </div>
+      </div>
+      <div class="login-heading">
+        <h2 class="login-main-title">AutoFlow.</h2>
+        <h2 class="login-main-subtitle">License Access.</h2>
+        <p class="login-subtitle">Enter your license email to activate AutoFlow.</p>
+      </div>
+    </div>
+
+    <div class="login-form">
+      <div class="control-group">
+        <label for="license-email">License email</label>
+        <div class="login-input-wrapper">
+          <span class="login-input-icon">@</span>
+          <input type="email" id="license-email" placeholder="you@example.com" autocomplete="email" />
+        </div>
+      </div>
+
+      <p class="login-terms-text">
+        By signing in, you allow this device to use your AutoFlow license.
+      </p>
+
+      <div class="config-actions login-actions">
+        <button id="login-button" class="btn btn-open">
+          <span class="btn-icon">&#9654;</span>
+          Sign in
+        </button>
+      </div>
+
+      <div id="login-message" class="login-error" style="display:none;"></div>
+    </div>
+
+    <div class="login-footer">
+      <p><strong>AutoFlow</strong> - Video Generator Automation For Flow</p>
+    </div>
+  </div>
+
+  <script src="login.js"></script>
+</body>
+</html>

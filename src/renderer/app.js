@@ -10,6 +10,7 @@ class AutoFlowApp {
     this.logs = [];
     this.activityLogs = [];
     this.videoAPI = null;
+    this.remainingCredits = null;
 
     this.concurrentProcessing = 0;
     this.maxConcurrency = 3;
@@ -361,22 +362,14 @@ class AutoFlowApp {
         const mesinId1 = license.mesinId1 || '-';
         const mesinId2 = license.mesinId2 || '-';
         const mesinId3 = license.mesinId3 || '-';
-        const ultra = license.ultra || '-';
-        const pass = license.pass || '-';
-        const ultraExpiredDate = license.ultraExpiredDate || '-';
-        const statusDeliveryUltra = license.statusDeliveryUltra || '-';
 
         const rows = [
           '<div class="license-detail-row"><span class="license-detail-label">Email</span><span class="license-detail-value">' + email + '</span></div>',
-          '<div class="license-detail-row"><span class="license-detail-label">Tanggal Join</span><span class="license-detail-value">' + tanggalJoin + '</span></div>',
+          '<div class="license-detail-row"><span class="license-detail-label">Join Date</span><span class="license-detail-value">' + tanggalJoin + '</span></div>',
           '<div class="license-detail-row"><span class="license-detail-label">License Expired Date</span><span class="license-detail-value">' + tanggalBerakhir + '</span></div>',
-          '<div class="license-detail-row"><span class="license-detail-label">Mesin ID 1</span><span class="license-detail-value">' + mesinId1 + '</span></div>',
-          '<div class="license-detail-row"><span class="license-detail-label">Mesin ID 2</span><span class="license-detail-value">' + mesinId2 + '</span></div>',
-          '<div class="license-detail-row"><span class="license-detail-label">Mesin ID 3</span><span class="license-detail-value">' + mesinId3 + '</span></div>',
-          '<div class="license-detail-row"><span class="license-detail-label">Ultra</span><span class="license-detail-value">' + ultra + '</span></div>',
-          '<div class="license-detail-row"><span class="license-detail-label">Pass</span><span class="license-detail-value">' + pass + '</span></div>',
-          '<div class="license-detail-row"><span class="license-detail-label">Ultra Expired Date</span><span class="license-detail-value">' + ultraExpiredDate + '</span></div>',
-          '<div class="license-detail-row"><span class="license-detail-label">Status Delivery Ultra</span><span class="license-detail-value">' + statusDeliveryUltra + '</span></div>'
+          '<div class="license-detail-row"><span class="license-detail-label">Machine ID 1</span><span class="license-detail-value">' + mesinId1 + '</span></div>',
+          '<div class="license-detail-row"><span class="license-detail-label">Machine ID 2</span><span class="license-detail-value">' + mesinId2 + '</span></div>',
+          '<div class="license-detail-row"><span class="license-detail-label">Machine ID 3</span><span class="license-detail-value">' + mesinId3 + '</span></div>'
         ];
 
         contentEl.innerHTML = rows.join('');
@@ -648,14 +641,14 @@ class AutoFlowApp {
       savePromptsBtn.addEventListener('click', () => this.savePrompts());
     }
 
+    const importPromptsBtn = document.getElementById('import-prompts');
+    if (importPromptsBtn) {
+      importPromptsBtn.addEventListener('click', () => this.importPrompts());
+    }
+
     const clearPromptsBtn = document.getElementById('clear-prompts');
     if (clearPromptsBtn) {
       clearPromptsBtn.addEventListener('click', () => this.clearPrompts());
-    }
-
-    const browseInputBtn = document.getElementById('browse-input');
-    if (browseInputBtn) {
-      browseInputBtn.addEventListener('click', () => this.selectInputFolder());
     }
 
     const browseOutputBtn = document.getElementById('browse-output');
@@ -1060,6 +1053,103 @@ class AutoFlowApp {
     }
   }
 
+  async importPrompts() {
+    try {
+      if (!window.electronAPI || !window.electronAPI.selectFiles || !window.electronAPI.readFileBase64) {
+        this.showError('Import prompts is not available in this environment');
+        return;
+      }
+
+      const result = await window.electronAPI.selectFiles({
+        multiple: false,
+        filters: [
+          { name: 'Text Files', extensions: ['txt'] }
+        ]
+      });
+
+      if (!result || result.canceled || !result.filePaths || result.filePaths.length === 0) {
+        return;
+      }
+
+      const filePath = result.filePaths[0];
+      const fileResult = await window.electronAPI.readFileBase64(filePath);
+      if (!fileResult || !fileResult.success || !fileResult.base64) {
+        const message = fileResult && fileResult.error ? fileResult.error : 'Unknown error';
+        this.showError('Failed to import prompts: ' + message);
+        return;
+      }
+
+      const base64 = fileResult.base64;
+      let text = '';
+      try {
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        const decoder = new TextDecoder('utf-8');
+        text = decoder.decode(bytes);
+      } catch (e) {
+        try {
+          text = atob(base64);
+        } catch (e2) {
+          this.showError('Failed to decode imported prompts: ' + (e2.message || String(e2)));
+          return;
+        }
+      }
+
+      const promptsEl = document.getElementById('prompt-list');
+      if (!promptsEl) {
+        this.showError('Prompt input is not available');
+        return;
+      }
+
+      promptsEl.value = text;
+      this.updatePromptCount();
+      this.validateForm();
+      this.autoSaveCurrentState();
+      this.showSuccess('Prompts imported');
+      this.log(`Prompts imported from file: ${filePath}`, 'success', { activity: true });
+    } catch (error) {
+      this.showError('Failed to import prompts: ' + (error.message || String(error)));
+    }
+  }
+
+  removePromptFromTextarea(prompt) {
+    const autoDeleteEl = document.getElementById('auto-delete-prompts');
+    if (autoDeleteEl && !autoDeleteEl.checked) {
+      return;
+    }
+
+    const promptsEl = document.getElementById('prompt-list');
+    if (!promptsEl) {
+      return;
+    }
+
+    const target = (prompt || '').trim();
+    if (!target) {
+      return;
+    }
+
+    const lines = (promptsEl.value || '').split('\n');
+    let removed = false;
+    const newLines = [];
+
+    for (const line of lines) {
+      if (!removed && line.trim() === target) {
+        removed = true;
+        continue;
+      }
+      newLines.push(line);
+    }
+
+    if (removed) {
+      promptsEl.value = newLines.join('\n');
+      this.updatePromptCount();
+      this.autoSaveCurrentState();
+    }
+  }
+
   clearImages() {
     this.imageFiles = [];
     this.selectedImages = [];
@@ -1230,6 +1320,10 @@ class AutoFlowApp {
       }
 
       if (result.success) {
+        if (typeof result.remainingCredits === 'number') {
+          this.remainingCredits = result.remainingCredits;
+          this.updateCreditsDisplay();
+        }
         item.operationName = result.operationName;
         item.sceneId = result.sceneId;
         item.status = 'generating';
@@ -1306,6 +1400,9 @@ class AutoFlowApp {
     ) {
       // Authorization/permission error - stop processing and notify user
       this.processingState = 'idle';
+      this.isProcessing = false;
+      this.isPaused = false;
+      this.concurrentProcessing = 0;
       this.updateProcessingControls();
 
       // Show notification to user
@@ -1449,7 +1546,7 @@ class AutoFlowApp {
             // Failed status - restart the entire process like n8n (never give up)
             this.log(`Generation failed on server for ${item.prompt || item.imagePath}, restarting from beginning...`, 'warning', { activity: true });
 
-            // Reset item status and restart processing
+            // Reset item status
             item.status = 'queued';
             item.operationName = null;
             item.sceneId = null;
@@ -1476,6 +1573,9 @@ class AutoFlowApp {
         } else if (error.message.includes('401') || error.message.includes('403') || error.message.includes('Authorization')) {
           // Auth errors (401/403) during polling - stop processing and notify user
           this.processingState = 'idle';
+          this.isProcessing = false;
+          this.isPaused = false;
+          this.concurrentProcessing = 0;
           this.updateProcessingControls();
 
           this.showError('Bearer token is invalid or expired during polling. Please update your bearer token in settings and try again.');
@@ -1559,6 +1659,10 @@ class AutoFlowApp {
     
     // Log status changes
     this.logStatusChange(item, 'processing', 'completed');
+
+    if (item.type === 'text-to-video') {
+      this.removePromptFromTextarea(item.prompt);
+    }
   }
 
   async skipAllActive() {
@@ -1669,14 +1773,11 @@ class AutoFlowApp {
 
       let durationSeconds = '';
       if (item.startTime && item.endTime) {
-        const startMs = item.startTime instanceof Date
+        const startedAtMs = item.startTime instanceof Date
           ? item.startTime.getTime()
           : Number(item.startTime);
-        const endMs = item.endTime instanceof Date
-          ? item.endTime.getTime()
-          : Number(item.endTime);
-        if (!Number.isNaN(startMs) && !Number.isNaN(endMs)) {
-          durationSeconds = Math.round((endMs - startMs) / 1000);
+        if (!Number.isNaN(startedAtMs)) {
+          durationSeconds = Math.round((item.endTime - startedAtMs) / 1000);
         }
       }
 
@@ -1934,7 +2035,7 @@ class AutoFlowApp {
     if (status === 'processing' && oldStatus === 'pending') {
       item.startTime = Date.now();
     } else if (status === 'completed' || status === 'failed' || status === 'timeout' || status === 'skipped') {
-      item.endTime = Date.now();
+      item.endTime = new Date();
     }
     
     // Move items between queues as needed
@@ -2488,6 +2589,7 @@ class AutoFlowApp {
     this.validateForm();
     this.updatePromptCount();
     this.updateProcessingControls();
+    this.updateCreditsDisplay();
   }
 
   showSuccess(message) {
@@ -2539,7 +2641,11 @@ class AutoFlowApp {
 
     // Show alert only for errors
     if (type === 'error') {
-      alert(message);
+      const lower = String(message || '').toLowerCase();
+      const isBearerAuthError = lower.includes('bearer token is invalid or expired');
+      if (!isBearerAuthError) {
+        alert(message);
+      }
     }
   }
 

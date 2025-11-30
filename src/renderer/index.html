@@ -53,6 +53,7 @@
                     <div class="status-indicator">
                         <span class="status-dot" id="status-dot"></span>
                         <span class="status-text" id="status-text">Ready</span>
+                        <span class="credits-remaining" id="credits-remaining">Credits: </span>
                     </div>
                 </div>
 
@@ -133,6 +134,11 @@
                                                 <div class="prompt-stats">
                                                     <span id="prompt-count">0 prompts</span>
                                                     <div class="prompt-actions" style="text-align: right;">
+                                                        <label class="prompt-option">
+                                                            <input type="checkbox" id="auto-delete-prompts" checked>
+                                                            Auto delete used prompts
+                                                        </label>
+                                                        <button id="import-prompts" class="btn btn-secondary btn-sm">Import</button>
                                                         <button id="save-prompts" class="btn btn-secondary btn-sm">Save</button>
                                                         <button id="clear-prompts" class="btn btn-secondary btn-sm">Clear All</button>
                                                     </div>
@@ -192,6 +198,10 @@
                             </div>
 
                             <div class="progress-stats">
+                                <div class="stat">
+                                    <span class="stat-label">Total</span>
+                                    <span class="stat-value" id="total-count">0</span>
+                                </div>
                                 <div class="stat">
                                     <span class="stat-label">Queued</span>
                                     <span class="stat-value" id="queued-count">0</span>

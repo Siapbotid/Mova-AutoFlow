@@ -41,7 +41,11 @@ class VideoAPI {
     const configs = {
       'LANDSCAPE 16:9': {
         aspectRatio: 'VIDEO_ASPECT_RATIO_LANDSCAPE',
+        // 3.1 Fast
         textToVideoFast: 'veo_3_1_t2v_fast_ultra',
+        // 3.1 Fast [Lower Priority]
+        textToVideoFastLow: 'veo_3_1_t2v_fast_ultra_relaxed',
+        // 3.1 Quality
         textToVideoQuality: 'veo_3_1_t2v',
         imageToVideoFast: 'veo_3_0_r2v_fast_ultra',
         imageToVideoQuality: 'veo_3_0_r2v_fast_ultra'
@@ -131,11 +135,17 @@ class VideoAPI {
       }
 
       const result = await response.json();
+      const remainingCredits =
+        result && typeof result.remainingCredits === 'number'
+          ? result.remainingCredits
+          : null;
+
       return {
         success: true,
         data: result,
         sceneId: sceneId,
-        operationName: result.operations?.[0]?.operation?.name
+        operationName: result.operations?.[0]?.operation?.name,
+        remainingCredits
       };
     } catch (error) {
       return {
@@ -197,11 +207,17 @@ class VideoAPI {
       }
 
       const result = await response.json();
+      const remainingCredits =
+        result && typeof result.remainingCredits === 'number'
+          ? result.remainingCredits
+          : null;
+
       return {
         success: true,
         data: result,
         sceneId: sceneId,
-        operationName: result.operations?.[0]?.operation?.name
+        operationName: result.operations?.[0]?.operation?.name,
+        remainingCredits
       };
     } catch (error) {
       return {

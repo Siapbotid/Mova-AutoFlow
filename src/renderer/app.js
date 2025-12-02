@@ -2072,7 +2072,9 @@ class AutoFlowApp {
     if (!this.completedItems) this.completedItems = [];
 
     // Calculate statistics properly
-    const queuedItems = this.processQueue.filter(item => item.status === 'pending');
+    const queuedItems = this.processQueue.filter(item => 
+      item.status === 'pending' || item.status === 'queued'
+    );
     const processingItems = this.processQueue.filter(item => 
       item.status === 'processing' || item.status === 'generating' || item.status === 'downloading'
     );

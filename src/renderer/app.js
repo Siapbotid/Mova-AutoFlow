@@ -2,6 +2,7 @@ class AutoFlowApp {
   constructor() {
 
     this.generationType = 'text-to-video';
+
     this.isProcessing = false;
     this.isPaused = false;
 
@@ -11,6 +12,8 @@ class AutoFlowApp {
     this.activityLogs = [];
     this.videoAPI = null;
     this.remainingCredits = null;
+
+    this.userStopRequested = false;
 
     this.concurrentProcessing = 0;
     this.maxConcurrency = 3;
@@ -542,16 +545,6 @@ class AutoFlowApp {
       });
     }
 
-    const pauseBtn = document.getElementById('pause-btn');
-    if (pauseBtn) {
-      pauseBtn.addEventListener('click', () => this.pauseProcessing());
-    }
-
-    const resumeBtn = document.getElementById('resume-btn');
-    if (resumeBtn) {
-      resumeBtn.addEventListener('click', () => this.resumeProcessing());
-    }
-
     const stopBtn = document.getElementById('stop-btn');
     if (stopBtn) {
       stopBtn.addEventListener('click', () => this.stopProcessing());
@@ -750,6 +743,9 @@ class AutoFlowApp {
         return;
       }
 
+      // Reset stop flag for a new run
+      this.userStopRequested = false;
+
       const bearerTokenEl = document.getElementById('bearer-token');
       const outputFolderEl = document.getElementById('output-folder-path');
       const promptsEl = document.getElementById('prompt-list');
@@ -862,38 +858,21 @@ class AutoFlowApp {
     }
   }
 
-  pauseProcessing() {
-    if (!this.isProcessing || this.isPaused) {
-      return;
-    }
-    this.isPaused = true;
-    this.processingState = 'paused';
-    this.updateProcessingControls();
-    this.log('Processing paused', 'info', { activity: true });
-  }
-
-  resumeProcessing() {
-    if (!this.isProcessing || !this.isPaused) {
-      return;
-    }
-    this.isPaused = false;
-    this.processingState = 'processing';
-    this.updateProcessingControls();
-    this.log('Processing resumed', 'info', { activity: true });
-
-    this.fillConcurrencySlots();
-  }
-
   stopProcessing() {
     if (!this.isProcessing && this.processingState !== 'processing') {
       return;
     }
 
+    // Mark that user explicitly requested a hard stop
+    this.userStopRequested = true;
     this.processingState = 'idle';
     this.isProcessing = false;
     this.isPaused = false;
     this.concurrentProcessing = 0;
     this.updateProcessingControls();
+    this.updateProcessedItemsList();
+    this.updateStatistics();
+    this.validateForm();
     this.log('Processing stopped by user', 'info', { activity: true });
   }
 
@@ -1244,9 +1223,14 @@ class AutoFlowApp {
   }
 
   async processItem(item) {
+    // If user has requested a hard stop, do not start or continue this item
+    if (this.userStopRequested || !this.isProcessing || this.processingState === 'idle') {
+      return;
+    }
     try {
       // Update status to processing
       item.status = 'processing';
+
       item.progress = 5;
 
       item.startTime = new Date();
@@ -1352,6 +1336,12 @@ class AutoFlowApp {
   async handleProcessingError(item, error) {
     const errorMessage = error.message || error.toString();
     
+    // If user requested a global stop, do not perform any retries
+    if (this.userStopRequested || !this.isProcessing || this.processingState === 'idle') {
+      this.log(`Processing was stopped; aborting retries for ${item.prompt || item.imagePath}`, 'info', { activity: true });
+      return;
+    }
+
     // If user has skipped this item, stop any further retries
     if (item.status === 'skipped') {
       this.log(`Stopping retries for skipped item: ${item.prompt || item.imagePath}`, 'info', { activity: true });
@@ -1379,6 +1369,12 @@ class AutoFlowApp {
 
       // Wait 10 seconds for rate limit (like "Antri boss lagi Overload" in workflow)
       await new Promise(resolve => setTimeout(resolve, 10000));
+
+      // Before retrying, stop if user has requested a global stop
+      if (this.userStopRequested || !this.isProcessing || this.processingState === 'idle') {
+        this.log(`Stop requested during rate-limit wait, aborting retries for ${item.prompt || item.imagePath}`, 'info', { activity: true });
+        return;
+      }
 
       // Before retrying, stop if user has skipped the item
       if (item.status === 'skipped') {
@@ -1423,6 +1419,12 @@ class AutoFlowApp {
 
       // Wait 5 seconds before retrying
       await new Promise(resolve => setTimeout(resolve, 5000));
+
+      // Before retrying, stop if user has requested a global stop
+      if (this.userStopRequested || !this.isProcessing || this.processingState === 'idle') {
+        this.log(`Stop requested during retry wait, aborting retries for ${item.prompt || item.imagePath}`, 'info', { activity: true });
+        return;
+      }
 
       // Before retrying, stop if user has skipped the item
       if (item.status === 'skipped') {
@@ -1662,6 +1664,15 @@ class AutoFlowApp {
 
     if (item.type === 'text-to-video') {
       this.removePromptFromTextarea(item.prompt);
+    }
+
+    // When there are no more items pending or running, mark processing as idle
+    if (this.processQueue.length === 0 && this.concurrentProcessing === 0) {
+      this.processingState = 'idle';
+      this.isProcessing = false;
+      this.isPaused = false;
+      this.updateProcessingControls();
+      this.validateForm();
     }
   }
 
@@ -2582,6 +2593,22 @@ class AutoFlowApp {
       if (stopBtn) stopBtn.disabled = true;
       if (statusText) statusText.textContent = 'Ready';
       // statusDot tetap default (success) tanpa class tambahan
+    }
+  }
+
+  updateCreditsDisplay() {
+    const creditsElement = document.getElementById('credits-remaining');
+    if (!creditsElement) return;
+
+    if (typeof this.remainingCredits === 'number') {
+      try {
+        const formatted = this.remainingCredits.toLocaleString('en-US');
+        creditsElement.textContent = `Credits: ${formatted}`;
+      } catch (e) {
+        creditsElement.textContent = `Credits: ${this.remainingCredits}`;
+      }
+    } else {
+      creditsElement.textContent = 'Credits: -';
     }
   }
 

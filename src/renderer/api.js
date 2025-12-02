@@ -97,7 +97,7 @@ class VideoAPI {
       const requestBody = {
         clientContext: {
           sessionId: sessionId,
-          projectId: "ea0ee376-fde2-4ac5-b4b5-b29f3a081ed3",
+          projectId: "39e9deb0-db07-49a5-8071-076ef25c8ecd",
           tool: "PINHOLE",
           userPaygateTier: "PAYGATE_TIER_TWO"
         },

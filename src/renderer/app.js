@@ -584,7 +584,7 @@ class AutoFlowApp {
     // Settings controls
     const saveConfigBtn = document.getElementById('save-config');
     if (saveConfigBtn) {
-      saveConfigBtn.addEventListener('click', () => this.saveSettings());
+      saveConfigBtn.addEventListener('click', () => this.saveOverviewConfiguration());
     }
 
     const saveSettingsBtn = document.getElementById('save-settings');
@@ -647,6 +647,11 @@ class AutoFlowApp {
     const browseOutputBtn = document.getElementById('browse-output');
     if (browseOutputBtn) {
       browseOutputBtn.addEventListener('click', () => this.selectOutputFolder());
+    }
+
+    const browseInputBtn = document.getElementById('browse-input');
+    if (browseInputBtn) {
+      browseInputBtn.addEventListener('click', () => this.selectInputFolder());
     }
 
     const inputFolderInput = document.getElementById('input-folder-path');
@@ -750,28 +755,8 @@ class AutoFlowApp {
       const outputFolderEl = document.getElementById('output-folder-path');
       const promptsEl = document.getElementById('prompt-list');
       const inputFolderEl = document.getElementById('input-folder-path');
-      const concurrentEl = document.getElementById('concurrent-count');
 
-      const bearerToken = bearerTokenEl ? bearerTokenEl.value.trim() : '';
-      const outputFolder = outputFolderEl ? outputFolderEl.value.trim() : '';
-
-      if (concurrentEl) {
-        const concurrentValue = parseInt(concurrentEl.value, 10);
-        if (!Number.isNaN(concurrentValue) && concurrentValue > 0) {
-          this.maxConcurrency = Math.min(20, concurrentValue);
-        }
-      }
-      
-      if (!bearerToken || !outputFolder) {
-        this.showError('Please fill Bearer Token and Output Folder before starting');
-        return;
-      }
-
-      if (!this.videoAPI) {
-        this.videoAPI = new VideoAPI(bearerToken);
-      } else {
-        this.videoAPI.updateBearerToken(bearerToken);
-      }
+      await this.initializeAPI();
 
       const items = [];
 
@@ -852,6 +837,7 @@ class AutoFlowApp {
       const kindText = this.generationType === 'text-to-video' ? 'prompt(s)' : 'image(s)';
       this.log(`Starting processing of ${items.length} ${kindText}`, 'info', { activity: true });
 
+      this.updateMaxConcurrencyFromUI();
       this.fillConcurrencySlots();
     } catch (error) {
       this.showError('Failed to start processing: ' + (error.message || String(error)));
@@ -2208,10 +2194,17 @@ class AutoFlowApp {
     if (modelSelectMain) modelSelectMain.value = videoModel;
     if (settingsModelEl) settingsModelEl.value = videoModel;
 
-    const concurrencyValue = settings.defaultConcurrency || '2';
+    let concurrencyValue = settings.defaultConcurrency || '2';
+    let parsedConcurrency = parseInt(concurrencyValue, 10);
+    if (Number.isNaN(parsedConcurrency) || parsedConcurrency < 1) {
+      parsedConcurrency = 1;
+    } else if (parsedConcurrency > 10) {
+      parsedConcurrency = 10;
+    }
+    concurrencyValue = String(parsedConcurrency);
     if (concurrentMain) concurrentMain.value = concurrencyValue;
     if (settingsConcurrentEl) settingsConcurrentEl.value = concurrencyValue;
-    this.maxConcurrency = parseInt(concurrencyValue, 10) || 3;
+    this.maxConcurrency = parsedConcurrency;
 
     if (geminiKeyEl) {
       geminiKeyEl.value = settings.geminiApiKey || '';
@@ -2226,6 +2219,51 @@ class AutoFlowApp {
     }
 
     this.validateForm();
+  }
+
+  updateMaxConcurrencyFromUI() {
+    const concurrentEl = document.getElementById('concurrent-count');
+    if (!concurrentEl) {
+      return;
+    }
+
+    let value = parseInt(concurrentEl.value, 10);
+    if (Number.isNaN(value) || value <= 0) {
+      value = 1;
+    } else if (value > 10) {
+      value = 10;
+    }
+
+    concurrentEl.value = String(value);
+    this.maxConcurrency = value;
+  }
+
+  saveOverviewConfiguration() {
+    const concurrentMain = document.getElementById('concurrent-count');
+    const settingsConcurrentEl = document.getElementById('settings-concurrent');
+    const modelSelectMain = document.getElementById('model-select');
+    const settingsModelEl = document.getElementById('settings-model');
+
+    if (concurrentMain) {
+      let value = parseInt(concurrentMain.value, 10);
+      if (Number.isNaN(value) || value < 1) {
+        value = 1;
+      } else if (value > 10) {
+        value = 10;
+      }
+      const valueStr = String(value);
+      concurrentMain.value = valueStr;
+      if (settingsConcurrentEl) {
+        settingsConcurrentEl.value = valueStr;
+      }
+      this.maxConcurrency = value;
+    }
+
+    if (modelSelectMain && settingsModelEl) {
+      settingsModelEl.value = modelSelectMain.value;
+    }
+
+    this.saveSettings();
   }
 
   async saveSettings() {
